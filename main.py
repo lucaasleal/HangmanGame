@@ -132,6 +132,7 @@ def init():
     letras_descobertas = ["_"] * len(palavra)
     
     letras_usadas = []
+    letras_usadas.append("*")
     indice_letra = 0
     erros = 0
     lcd.clear()
