@@ -4,22 +4,21 @@ from time import sleep
 from random import choice
 from temas import *  # Importa o dicionário de temas e palavras
 
-# ---------------------------
-# Configuração do LCD 20x4 via I2C
-# ---------------------------
+#configuração do LCD 20x4 via I2C
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
 lcd = I2cLcd(i2c, 0x27, 4, 20)
 
-# ---------------------------
-# Definição dos botões físicos
-# ---------------------------
+#botoes
 bot_direita = Pin(12, Pin.IN, Pin.PULL_UP)
 bot_ok = Pin(11, Pin.IN, Pin.PULL_UP)
 bot_esquerda = Pin(10, Pin.IN, Pin.PULL_UP)
 
-# ---------------------------
-# Variáveis globais de jogo
-# ---------------------------
+# Estados anteriores dos botões
+estado_ant_direita = 1
+estado_ant_esquerda = 1
+estado_ant_ok = 1
+
+#Variaveis globais
 letras_descobertas = []
 alfabeto = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 alfabeto_game = alfabeto.copy()
@@ -27,21 +26,20 @@ indice_letra = 0
 letras_usadas = []
 erros = 0
 max_erros = 6
+estado_ant_direita= estado_ant_esquerda= estado_ant_ok = False
 
-# ---------------------------
-# Caracteres personalizados no LCD (setas e boneco)
-# ---------------------------
+#Custom chars usados
 seta_esquerda = bytearray([0b00010, 0b00110, 0b01110, 0b11110, 0b01110, 0b00110, 0b00010, 0b00000])
-seta_direita  = bytearray([0b01000, 0b01100, 0b01110, 0b01111, 0b01110, 0b01100, 0b01000, 0b00000])
+seta_direita = bytearray([0b01000, 0b01100, 0b01110, 0b01111, 0b01110, 0b01100, 0b01000, 0b00000])
 lcd.custom_char(0, seta_esquerda)
 lcd.custom_char(1, seta_direita)
 
-head       = bytearray([0b00100, 0b00000, 0b01110, 0b10001, 0b10001, 0b10001, 0b01110, 0b00100])
-body       = bytearray([0b00100, 0b01110, 0b10101, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100])
-arm_left   = bytearray([0b00000, 0b00000, 0b00000, 0b00000, 0b00001, 0b00010, 0b00000, 0b00000])
-arm_right  = bytearray([0b00000, 0b00000, 0b00000, 0b00000, 0b10000, 0b01000, 0b00000, 0b00000])
-leg_left   = bytearray([0b00100, 0b01000, 0b01000, 0b10000, 0b10000, 0b10000, 0b00000, 0b00000])
-leg_right  = bytearray([0b00100, 0b01010, 0b01010, 0b10001, 0b10001, 0b10001, 0b00000, 0b00000])
+head = bytearray([0b00100, 0b00000, 0b01110, 0b10001, 0b10001, 0b10001, 0b01110, 0b00100])
+body = bytearray([0b01110, 0b10101, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100])
+arm_left = bytearray([0b00000, 0b00000, 0b00000, 0b00001, 0b00010, 0b00000, 0b00000, 0b00000])
+arm_right = bytearray([0b00000, 0b00000, 0b00000, 0b10000, 0b01000, 0b00000, 0b00000, 0b00000])
+leg_left = bytearray([0b01000, 0b01000, 0b10000, 0b10000, 0b10000, 0b00000, 0b00000, 0b00000])
+leg_right = bytearray([0b01010, 0b01010, 0b10001, 0b10001, 0b10001, 0b00000, 0b00000, 0b00000])
 lcd.custom_char(2, head)
 lcd.custom_char(3, body)
 lcd.custom_char(4, arm_left)
@@ -49,9 +47,7 @@ lcd.custom_char(5, arm_right)
 lcd.custom_char(6, leg_left)
 lcd.custom_char(7, leg_right)
 
-# ---------------------------
-# Função de inicialização
-# ---------------------------
+#inicializacao da rodada
 def init():
     global letras_descobertas, letras_usadas, indice_letra, erros, alfabeto_game, palavra
     letras_descobertas = []
@@ -74,17 +70,14 @@ def init():
 
     lcd.clear()
     tema_escolhido = selecionar_tema()
-    palavra = choice(temas[tema_escolhido]).upper()
+    palavra = choice(temas[tema_escolhido]).upper() #Escolha do tema e da palavra
 
     for letra in palavra:
-        letras_descobertas.append('_' if letra != ' ' else ' ')
+        letras_descobertas.append('_' if letra != ' ' else ' ') 
     
-    sleep(1)
     atualizar_display()
 
-# ---------------------------
-# Seleção de tema
-# ---------------------------
+#Selecao de tema pelo usuario
 def selecionar_tema():
     opcoes = list(temas.keys())
     indice = 0
@@ -102,20 +95,18 @@ def selecionar_tema():
 
         while True:
             if not bot_direita.value():
+                while not bot_direita.value(): pass  # espera soltar
                 indice = (indice + 1) % len(opcoes)
-                sleep(0.3)
                 break
             if not bot_esquerda.value():
+                while not bot_esquerda.value(): pass
                 indice = (indice - 1) % len(opcoes)
-                sleep(0.3)
                 break
             if not bot_ok.value():
-                sleep(0.3)
+                while not bot_ok.value(): pass
                 return opcoes[indice]
 
-# ---------------------------
-# Mostra letras vizinhas no LCD
-# ---------------------------
+#Fazer a rotação de letras
 def mostrar_letras_vizinhas():
     lcd.move_to(9, 3)
     for i in range(-3, 4):
@@ -125,19 +116,25 @@ def mostrar_letras_vizinhas():
         else:
             lcd.putstr(alfabeto_game[idx])
 
-# ---------------------------
-# Exibe a palavra oculta com letras descobertas
-# ---------------------------
+#Mostra o item com letras descobertas
 def mostrar_frase_lcd(frase):
     linhas = [frase[i:i+14] for i in range(0, len(frase), 14)]
     for i in range(min(3, len(linhas))):
         lcd.move_to(5, i)
+        linha = ""
         for letra in linhas[i]:
-            lcd.putstr(letra if letra in letras_descobertas or letra == ' ' else "_")
+            linha += letra if letra in letras_descobertas or letra == ' ' else "_"
 
-# ---------------------------
-# Atualiza o display com a forca, boneco e letras
-# ---------------------------
+        # Verifica se deve adicionar hífen no final da linha
+        if i < len(linhas) - 1:
+            fim_atual = linhas[i][-1]
+            inicio_prox = linhas[i + 1][0]
+            if fim_atual != ' ' and inicio_prox != ' ':
+                linha = linha + "-"  # substitui o último caractere por hífen
+
+        lcd.putstr(linha)  # completa até 14 caracteres com espaços
+
+#Desenha letras, forca e boneco
 def atualizar_display():
     lcd.clear()
     lcd.move_to(0, 0); lcd.putstr("+-+")
@@ -154,24 +151,28 @@ def atualizar_display():
     if erros >= 5: lcd.move_to(2, 3); lcd.putchar(chr(6))  # Perna esq
     if erros == 6: lcd.move_to(2, 3); lcd.putchar(chr(7))  # Perna dir
 
-# ---------------------------
-# Loop principal do jogo
-# ---------------------------
-init()
+init() #Primeira inicialização
+
 while True:
     atualizou = False
 
-    if not bot_direita.value():
+    # Verifica botões com detecção de borda (mudança de estado)
+    valor_direita = bot_direita.value()
+    valor_esquerda = bot_esquerda.value()
+    valor_ok = bot_ok.value()
+
+    # Direita pressionada
+    if estado_ant_direita and not valor_direita:
         indice_letra = (indice_letra + 1) % len(alfabeto_game)
         atualizou = True
-        sleep(0.2)
 
-    if not bot_esquerda.value():
+    # Esquerda pressionada
+    if estado_ant_esquerda and not valor_esquerda:
         indice_letra = (indice_letra - 1) % len(alfabeto_game)
         atualizou = True
-        sleep(0.2)
 
-    if not bot_ok.value():
+    # OK pressionado
+    if estado_ant_ok and not valor_ok:
         letra = alfabeto_game[indice_letra]
         alfabeto_game[indice_letra] = "*"
 
@@ -186,11 +187,17 @@ while True:
             atualizou = True
         else:
             lcd.clear()
+            lcd.move_to(5, 1)
             lcd.putstr("Ja usada!")
             sleep(1)
             atualizou = True
-        sleep(0.2)
 
+    # Atualiza estados anteriores
+    estado_ant_direita = valor_direita
+    estado_ant_esquerda = valor_esquerda
+    estado_ant_ok = valor_ok
+
+    # Verifica fim de jogo
     if "_" not in letras_descobertas:
         atualizar_display()
         sleep(2)
@@ -214,4 +221,4 @@ while True:
     if atualizou:
         atualizar_display()
 
-
+    sleep(0.05)  # Delay pra dar um efeito de loading
