@@ -1,8 +1,8 @@
 from machine import Pin, SoftI2C
-from pico_i2c_lcd import I2cLcd
+from assets.pico_i2c_lcd import I2cLcd
 from time import sleep
 from random import choice
-from temas import *  # Importa o dicionário de temas e palavras
+from src.themes import *  # Importa o dicionário de temas e palavras
 
 #configuração do LCD 20x4 via I2C
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
