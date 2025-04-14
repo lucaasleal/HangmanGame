@@ -1,8 +1,8 @@
 from machine import Pin, SoftI2C
-from assets.pico_i2c_lcd import I2cLcd
+from pico_i2c_lcd import I2cLcd
 from time import sleep
 from random import choice
-from src.themes import *  # Importa o dicionário de temas e palavras
+from temas import *  # Importa o dicionário de temas e palavras
 
 #configuração do LCD 20x4 via I2C
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
@@ -221,4 +221,4 @@ while True:
     if atualizou:
         atualizar_display()
 
-    sleep(0.05)  # Delay pra dar um efeito de loading
+    sleep(0.05)  # Delay pra dar um efeito
