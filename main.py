@@ -221,4 +221,4 @@ while True:
     if atualizou:
         atualizar_display()
 
-    sleep(0.05)  # Delay pra dar um efeito de loading
+    sleep(0.05)  # Delay pra dar um efeito
