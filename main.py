@@ -336,6 +336,6 @@ while True:
     seg_restantes = max((tempo_total - (tempo_atual - tempo_inicio)) // 1000, 0)
 
     if seg_restantes <= 10 and seg_restantes != ultimo_segundo_som:
-        speaker.freq(notas[0])
+        speaker.freq(262)
         speaker.duty_u16(0)
         ultimo_segundo_som = seg_restantes
