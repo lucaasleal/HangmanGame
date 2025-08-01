@@ -1,8 +1,36 @@
-from machine import Pin, SoftI2C
+from machine import Pin, SoftI2C, PWM
 from pico_i2c_lcd import I2cLcd
 from time import sleep, ticks_ms, ticks_diff #Biblioteca para cálculo do tempo
 from random import choice
 from temas import *  # Importa o dicionário de temas e palavras
+from picozero import Speaker
+
+notas = {
+    "C4": 262,
+    "D4": 294,
+    "E4": 330,
+    "F4": 349,
+    "G4": 392,
+    "A4": 440,
+    "B4": 494,
+    "C5": 523,
+    "D5": 587,
+    "E5": 659,
+    "F5": 698,
+    "G5": 784,
+    "A5": 880,
+    "B5": 988,
+    "C6": 1047,
+    "": 1000
+}
+
+
+
+
+speaker = PWM(Pin(14))
+speaker.freq(440)
+speaker.duty_u16(0)
+
 
 #configuração do LCD 20x4 via I2C
 i2c = SoftI2C(sda=Pin(0), scl=Pin(1), freq=400000)
@@ -56,6 +84,68 @@ lcd.custom_char(5, arm_right)
 lcd.custom_char(6, leg_left)
 lcd.custom_char(7, leg_right)
 
+
+# Global variables for music playback
+song_pos = 0
+notePlaying = 0
+
+mario_derrota_song = [
+    ("C5", 200),
+    ("G4", 200),
+    ("E4", 200),
+    ("A4", 200),
+    ("B4", 200),
+    ("A4", 200),
+    ("A4", 400),
+    ("G4", 200),
+    ("C5", 200),
+    ("E5", 200),
+    ("G5", 200),
+    ("F5", 200),
+    ("E5", 200),
+    ("C5", 200),
+    ("E4", 200),
+    ("C4", 200)
+]
+
+victory_song = [
+    ("G4", 150),
+    ("A4", 150),
+    ("C5", 300),
+    ("", 200), # Pausa
+
+    # Seção 2: Ritmo de fanfarra
+    ("G5", 200),
+    ("E5", 200),
+    ("C5", 200),
+    ("", 100),
+    ("G5", 200),
+    ("E5", 200),
+    ("C5", 200),
+    ("", 300), # Pausa maior
+
+    # Seção 3: Final triunfante com notas longas
+    ("C5", 400),
+    ("G5", 400),
+    ("C6", 800) # Nota final sustentada para o clímax
+]
+
+def tocar_nota(nota, dur_ms):
+    if(nota== ""):
+        speaker.duty_u16(0)
+        sleep(dur_ms/1000)
+    else:
+        speaker.freq(notas[nota])
+        speaker.duty_u16(1000)
+        sleep(dur_ms/1000)
+        speaker.duty_u16(0)
+        
+                         
+def tocar_musica(musica):
+    for nota, dur in musica:
+        tocar_nota(nota, dur)
+
+            
 #inicializacao da rodada
 def init():
     global letras_descobertas, letras_usadas, indice_letra, erros, alfabeto_game, palavra, tempo_inicio
@@ -225,7 +315,7 @@ while True:
         lcd.move_to(4, 0); lcd.putstr("Voce venceu!")
         lcd.move_to(0, 1); lcd.putstr("O item era:")
         lcd.move_to(0, 2); lcd.putstr(f'"{palavra}"')
-        sleep(3)
+        tocar_musica(victory_song)
         init()
     
     tempo_atual = ticks_ms()
@@ -236,7 +326,7 @@ while True:
         lcd.move_to(4, 0); lcd.putstr("Game Over :(")
         lcd.move_to(0, 1); lcd.putstr("O item era:")
         lcd.move_to(0, 2); lcd.putstr(f'"{palavra}"')
-        sleep(3)
+        tocar_musica(mario_derrota_song)
         init()
 
     if atualizou:
@@ -246,5 +336,6 @@ while True:
     seg_restantes = max((tempo_total - (tempo_atual - tempo_inicio)) // 1000, 0)
 
     if seg_restantes <= 10 and seg_restantes != ultimo_segundo_som:
-        music.buzzer.play("c4", 0.2)
+        speaker.freq(notas[0])
+        speaker.duty_u16(0)
         ultimo_segundo_som = seg_restantes
